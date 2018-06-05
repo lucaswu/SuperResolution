@@ -11,8 +11,8 @@ def main():
     inferences = models.create_model(MODEL_NAME, low_res_holder)
     training_loss = models.loss(inferences, high_res_holder, name='training_loss', weights_decay=0)
     validation_loss = models.loss(inferences, high_res_holder, name='validation_loss')
-    tf.scalar_summary('training_loss', training_loss)
-    tf.scalar_summary('validation_loss', validation_loss)
+    tf.summary.scalar('training_loss', training_loss)
+    tf.summary.scalar('validation_loss', validation_loss)
 
     global_step = tf.Variable(0, trainable=False, name='global_step')
     # learning_rate = tf.train.piecewise_constant(
@@ -26,16 +26,18 @@ def main():
     low_res_batch, high_res_batch = batch_queue_for_training(TRAINING_DATA_PATH)
     low_res_eval, high_res_eval = batch_queue_for_testing(VALIDATION_DATA_PATH)
 
+    init = (tf.global_variables_initializer(), tf.local_variables_initializer())
     sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
+    #sess.run(tf.global_variables_initializer())
+    sess.run(init)
     # Start the queue runners (make batches).
     tf.train.start_queue_runners(sess=sess)
 
     # the saver will restore all model's variables during training
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=MAX_CKPT_TO_KEEP)
     # Merge all the summaries and write them out to TRAINING_DIR
-    merged_summary = tf.merge_all_summaries()
-    summary_writer = tf.train.SummaryWriter(TRAINING_SUMMARY_PATH, sess.graph)
+    merged_summary = tf.summary.merge_all()
+    summary_writer = tf.summary.FileWriter(TRAINING_SUMMARY_PATH, sess.graph)
 
     for step in range(1, NUM_TRAINING_STEPS+1):
         start_time = time.time()
